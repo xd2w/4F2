@@ -1,0 +1,106 @@
+s = tf('s');
+
+A = [
+    -10,    0,  10;
+      0, -100, 100;
+      0,    0,  -1;
+    ];
+
+B = [0; 0; 1];
+C = [0, 0, 1];
+D= 0;
+[n, ~] = size(A);
+
+cvx_begin sdp
+    variable Y(n, n) symmetric
+    variable Z(1, n)
+    variable gamma
+    minimize(gamma)
+    LMI1 = Y>0;
+    LMI2 = gamma > 2;
+    LMI3 = [[Y*A' +  A*Y + Z'*B' + B*Z, B, Y*C'];
+                [ B', -gamma , 0];
+                [ C*Y , 0 , -gamma]] < 0;
+    LMI4 = [[Y*A' +  A*Y, B, Y*C'];
+                [ B', -gamma , 0];
+                [ C*Y , 0 , -gamma]] < 0;
+cvx_end
+
+K = Z/Y;
+
+nt = 10;
+N = 10000;
+t = linspace(0, nt, N);
+dt = nt/(N);
+
+r = ones(1, N);
+% r = sin(t);
+y = zeros(1, N);
+
+z = [0; 0; 0];
+
+for i=1:N
+    z = z + dt* ((A*z) + B*(tanh(K*z) + r(i)));
+    y(i) = z(3);
+end
+
+figure
+plot(t, y)
+hold on;
+
+E = sqrt(sum(y.*y)/sum(r.*r))
+
+z = [1; 1; 1];
+
+for i=1:N
+    z = z + dt* ((A*z) + B*(tanh(K*z) + r(i)));
+    y(i) = z(3);
+end
+
+plot(t, y)
+xlabel("Time")
+ylabel("\delta y")
+saveas(gcf, "./figs/1i_step.eps", 'epsc')
+
+% E = sqrt(sum(y.*y)/sum(r.*r))
+
+
+r = ones(1, N)*1;
+iN = 2000;
+for i =1:iN/2
+    r(i:iN:end) = ;
+end
+% r= 2*sawtooth(2*t, 0.5);
+% r = sin(t);
+y = zeros(1, N);
+
+z = [0; 0; 0];
+
+for i=1:N
+    z = z + dt* ((A*z) + B*(tanh(K*z) + r(i)));
+    y(i) = z(3);
+end
+
+figure
+plot(t, y)
+hold on;
+
+E = sqrt(sum(y.*y)/sum(r.*r))
+
+z = [1; 1; 1];
+
+for i=1:N
+    z = z + dt* ((A*z) + B*(tanh(K*z) + r(i)));
+    y(i) = z(3);
+end
+
+plot(t, y)
+% hold on;
+% plot(t, r)
+xlabel("Time")
+ylabel("\delta y")
+saveas(gcf, "./figs/1i_sin.eps", 'epsc')
+% E = sum(y.*y)/sum(r.*r)
+% plot(t(1:end),E);
+
+

@@ -1,0 +1,63 @@
+close all;
+s = tf('s');
+
+Nit = 30;
+
+w3s = linspace(-100, 100, Nit);
+w1s = linspace(-100, 100, Nit);
+
+B = [0; 0; 1];
+C = [0, 0, 1];
+D= 0;
+[n, ~] = size(A);
+
+lambda = 20;xsx
+
+S_img = zeros(Nit, Nit);
+
+for i=1:Nit
+    for j=1:Nit
+% i = 1;
+% j = 8;
+        A = [
+            -10,    0,  10;
+              0, -100, 100;
+              w1s(i),    w3s(j),  -1;
+            ];
+        
+        cvx_begin sdp quiet
+            cvx_solver SDPT3
+
+            variable Y(n, n) symmetric
+            variable Z(1, n)
+            % variable gamma
+            variable ep
+            minimize(ep)
+            % LMI1 = Y>0
+            % LMI2 = gamma < 2
+            LMI3 = ep >= 0;
+            % LMI4 = Y*A' +  A*Y + Z'*B' + B*Z + 2*lambda*Y + ep*eye(n) < 0;
+            % LMI5 = Y*A' +  A*Y + 2*lambda*Y + ep*eye(n) < 0;
+            LMI6 = Y*A' +  A*Y + Z'*B' + B*Z + ep*eye(n) <= 0;
+            % LMI4 = [[Y*A' +  A*Y + Z'*B' + B*Z + 2*lambda*Y + ep*eye(n), B, Y*C'];
+            %             [ B', -gamma , 0];
+            %             [ C*Y , 0 , -gamma]] < 0;
+            % LMI5 = [[Y*A' +  A*Y + 2*lambda*Y + ep*eye(n), B, Y*C'];
+            %             [ B', -gamma , 0];
+            %             [ C*Y , 0 , -gamma]] < 0;
+            LMI4 = [[Y*A' +  A*Y + Z'*B' + B*Z + 2*lambda*Y + ep*eye(n), B-Y*C'];
+                        [ B'-C*Y, -ep]] <= 0;
+            LMI5 = [[Y*A' +  A*Y + 2*lambda*Y + ep*eye(n), B-Y*C'];
+                        [ B'-C*Y, -ep]] <= 0;
+        cvx_end
+        if cvx_status == "Solved"
+            S_img(i, j) = sum(eig(Y) < 0);
+        else
+            cvx_status
+            S_img(i, j) = -1;
+        end
+    end
+end 
+
+
+image(S_img*100)
